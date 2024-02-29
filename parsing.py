@@ -1,7 +1,9 @@
+import datetime
 import io
 import os
 import shutil
-from typing import Any
+from typing import Optional
+
 import docx
 import docx2txt
 import fitz
@@ -12,45 +14,44 @@ from langdetect import detect
 from spire.doc import FileFormat, Document
 from json_schemas import TruncParserOutput, ParserOutput
 from utils import naive_lang_detect, is_human
-from dotenv import load_dotenv
-
-load_dotenv()
-EXTRACTED_IMG_FOLDER = os.getenv('EXTRACTED_IMG_FOLDER')
+from main import EXTRACTED_IMG_FOLDER, BUCKET_NAME, S3
 
 
-def save_if_img_contains_human(file_path: str, img: Image.Image, model: Any,
-                               extracted_img_folder: str = EXTRACTED_IMG_FOLDER) -> str:
+def save_if_img_contains_human(img: Image.Image) -> Optional[tuple[str, str]]:
     """
     Saves an image if it contains a human.
 
     Parameters:
-        file_path (str): The path of the file containing the image.
         img (PIL.Image.Image): The image to be analyzed.
-        model (any): The object detection model.
-        extracted_img_folder (str): The folder to save extracted images.
+        local_img_path (str): The local folder to save extracted images.
+        yandex_img_path (str): The remote folder to save extracted images (yandexcloud).
 
     Returns:
         bool: found_img_path if a human is detected in the image, empty string otherwise.
     """
-    if is_human(img, model):
-        found_img_path = extracted_img_folder + '/' + file_path + '_image.jpg'
-        img.save(found_img_path)
-        return found_img_path
-    return ''
+    if is_human(img):
+        local_img_path = EXTRACTED_IMG_FOLDER + '/' + datetime.datetime.now().strftime(
+            "%Y-%m-%d_%H-%M-%S") + '_image.jpg'
+        img.save(local_img_path)
+
+        bucket_filename = local_img_path
+        S3.upload_file(local_img_path, BUCKET_NAME, bucket_filename)
+        yandex_img_path = f"https://storage.yandexcloud.net/{BUCKET_NAME}/{bucket_filename}"
+
+        return local_img_path, yandex_img_path
 
 
-def pdf_parser(file_path: str, model: Any) -> 'TruncParserOutput':
+def pdf_parser(file_path: str) -> 'TruncParserOutput':
     """
     Parses a PDF file.
 
     Parameters:
         file_path (str): The path of the PDF file to parse.
-        model (any): The object detection model.
 
     Returns:
         TruncParserOutput: The parsed output.
     """
-    found_img_path = ""
+    yandex_img_path = ""
 
     doc = fitz.open(file_path)
     text = []
@@ -71,8 +72,9 @@ def pdf_parser(file_path: str, model: Any) -> 'TruncParserOutput':
             image_data = io.BytesIO(image_bytes)
             img = Image.open(image_data)
 
-            found_img_path = save_if_img_contains_human(file_path, img, model)
-            if found_img_path:
+            paths = save_if_img_contains_human(img)
+            if paths:
+                local_img_path, yandex_img_path = paths
                 break
 
     # If we have parsed too few words, we probably need to use Optical Character Recognition for parsing the file
@@ -93,16 +95,15 @@ def pdf_parser(file_path: str, model: Any) -> 'TruncParserOutput':
             # Parse the whole file using OCR
             text.append(' '.join([result[1] for result in reader.readtext(img)]))
 
-    return TruncParserOutput(**{'photo_path': found_img_path, 'text': '\n'.join(text)})
+    return TruncParserOutput(**{'photo_path': yandex_img_path, 'text': '\n'.join(text)})
 
 
-def docx_parser(file_path: str, model: Any) -> 'TruncParserOutput':
+def docx_parser(file_path: str) -> 'TruncParserOutput':
     """
     Parses a DOCX file.
 
     Parameters:
         file_path (str): The path of the DOCX file to parse.
-        model (any): The object detection model.
 
     Returns:
         TruncParserOutput: The parsed output.
@@ -115,7 +116,7 @@ def docx_parser(file_path: str, model: Any) -> 'TruncParserOutput':
     except FileExistsError:
         pass
 
-    found_img_path = ""
+    yandex_img_path = ""
 
     # Extract images from file
     docx2txt.process(file_path, temp_img_folder)
@@ -123,8 +124,9 @@ def docx_parser(file_path: str, model: Any) -> 'TruncParserOutput':
         imgpath = temp_img_folder + '/' + imgfile
         img = Image.open(imgpath)
 
-        found_img_path = save_if_img_contains_human(file_path, img, model)
-        if found_img_path:
+        paths = save_if_img_contains_human(img)
+        if paths:
+            local_img_path, yandex_img_path = paths
             break
 
     # Extract text from file
@@ -139,24 +141,23 @@ def docx_parser(file_path: str, model: Any) -> 'TruncParserOutput':
         text = ['\n'.join(['\n'.join([cell.text for cell in row.cells]) for row in table.rows]) for table in
                 doc.tables]
 
-    return TruncParserOutput(**{'photo_path': found_img_path, 'text': '\n'.join(text)})
+    return TruncParserOutput(**{'photo_path': yandex_img_path, 'text': '\n'.join(text)})
 
 
-def parse(file_path: str, file_extension: str, model: Any) -> 'ParserOutput':
+def parse(file_path: str, file_extension: str) -> 'ParserOutput':
     """
     Parses a file based on its extension.
 
     Parameters:
         file_path (str): The path of the file to parse.
         file_extension (str): The extension of the file.
-        model (any): The object detection model.
 
     Returns:
         ParserOutput: The parsed output.
     """
 
     if file_extension == 'pdf':
-        data = pdf_parser(file_path, model)
+        data = pdf_parser(file_path)
 
     elif file_extension in ['doc', 'docx']:
 
@@ -168,7 +169,7 @@ def parse(file_path: str, file_extension: str, model: Any) -> 'ParserOutput':
             document.SaveToFile(file_path, FileFormat.Docx2016)
             document.Close()
 
-        data = docx_parser(file_path, model)
+        data = docx_parser(file_path)
     else:
         raise ValueError("Unknown file extension!")
 

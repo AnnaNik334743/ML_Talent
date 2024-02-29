@@ -1,5 +1,5 @@
-from typing import Any
 from PIL import Image
+from main import MODEL
 
 
 def naive_lang_detect(text: str) -> str:
@@ -24,18 +24,17 @@ def naive_lang_detect(text: str) -> str:
     return 'en' if english_letters > russian_letters else 'ru'
 
 
-def is_human(img: Image.Image, model: Any) -> bool:
+def is_human(img: Image.Image) -> bool:
     """
     Detects whether there is a human in an image using an object detection model.
 
     Parameters:
         img (PIL.Image.Image): The image to be analyzed.
-        model (any): The object detection model.
 
     Returns:
         bool: True if a human is detected in the image, False otherwise.
     """
-    output = model(img, verbose=False)
+    output = MODEL(img, verbose=False)
     res = output[0]
     classes = res.boxes.cls
     probs = res.boxes.conf
