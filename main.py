@@ -3,10 +3,12 @@ import uvicorn
 import tempfile
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
-from parsing import parse
+from parsing_utils import parse
 from json_schemas import Resume, ParserOutput
-from __init__ import GPT_MODEL, CLIENT, ENGLISH_PROMPT, RUSSIAN_PROMPT
+from config import OPENAI_CLIENT, OPENAI_MODEL_NAME
+from prompts import ENGLISH_PROMPT, RUSSIAN_PROMPT
 from utils import postprocess_special_fields
+
 
 app = FastAPI()
 
@@ -71,8 +73,8 @@ async def parse_text_with_llm(text: str, prompt_language: str):
         d = {"messages": [{"role": "system", "content": f"{ENGLISH_PROMPT}"},
                           {"role": "user", "content": f"{text}"}]}
 
-    # response = CLIENT.chat.completions.create(
-    #     model=GPT_MODEL,
+    # response = OPENAI_CLIENT.chat.completions.create(
+    #     model=OPENAI_MODEL_NAME,
     #     messages=d['messages']
     # )
     #
@@ -85,7 +87,7 @@ async def parse_text_with_llm(text: str, prompt_language: str):
     "last_name": "Бармин",
     "middle_name": "Сергеевич",
     "birth_date": "1995-06-14",
-    "birth_date_year_only": false,
+    "birth_date_year_only": False,
     "country": "Россия",
     "city": "Белгород",
     "about": "С 2018 года занимаюсь разработкой на Python, основные сферы деятельности: ML, DL, Computer Vision, System Design. Текущее направление развития – математика, математическое моделирование.",
@@ -216,7 +218,8 @@ async def parse_file(file: UploadFile = File(...), prettify_result: bool = False
 
     Parameters:
         file (UploadFile): The uploaded file containing the document.
-        prettify_result: Output contains number mappers () if set to false, otherwise human-readable mapping
+        prettify_result: Output contains number mappers (contact_type, education_type, etc.) if set to false, 
+        otherwise human-readable mapping
 
     Returns:
         Resume: The parsed resume object.
@@ -226,7 +229,7 @@ async def parse_file(file: UploadFile = File(...), prettify_result: bool = False
 
     result['resume']['photo_path'] = data.photo_path
 
-    return prettify_output(result) if prettify_result else result
+    return result if prettify_result else postprocess_special_fields(result)
 
 
 # @app.get("/download_file")

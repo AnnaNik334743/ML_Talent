@@ -1,5 +1,5 @@
 from PIL import Image
-from __init__ import MODEL
+from config import YOLO_MODEL
 
 
 def naive_lang_detect(text: str) -> str:
@@ -34,7 +34,7 @@ def is_human(img: Image.Image) -> bool:
     Returns:
         bool: True if a human is detected in the image, False otherwise.
     """
-    output = MODEL(img, verbose=False)
+    output = YOLO_MODEL(img, verbose=False)
     res = output[0]
     classes = res.boxes.cls
     probs = res.boxes.conf
