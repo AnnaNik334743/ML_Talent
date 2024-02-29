@@ -176,7 +176,7 @@ def parse(file_path: str, file_extension: str) -> 'ParserOutput':
 
     try:
         # Get the language of the text
-        language = detect(data.get('text'))
+        language = detect(data.text)
     except Exception:
         language = ''
 
