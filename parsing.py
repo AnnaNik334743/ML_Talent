@@ -3,7 +3,6 @@ import io
 import os
 import shutil
 from typing import Optional
-
 import docx
 import docx2txt
 import fitz
@@ -14,7 +13,7 @@ from langdetect import detect
 from spire.doc import FileFormat, Document
 from json_schemas import TruncParserOutput, ParserOutput
 from utils import naive_lang_detect, is_human
-from main import EXTRACTED_IMG_FOLDER, BUCKET_NAME, S3
+from __init__ import EXTRACTED_IMG_FOLDER, BUCKET_NAME, S3
 
 
 def save_if_img_contains_human(img: Image.Image) -> Optional[tuple[str, str]]:
