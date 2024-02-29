@@ -1,13 +1,52 @@
-import shutil
-import uvicorn
 import tempfile
+
+import boto3
+import httpx
+import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File
+from openai import OpenAI
+from requests.auth import HTTPProxyAuth
+from ultralytics import YOLO
+
+from json_schemas import Resume
+from parsing import *
 from fastapi.responses import FileResponse
 from parsing_utils import parse
 from json_schemas import Resume, ParserOutput
 from config import OPENAI_CLIENT, OPENAI_MODEL_NAME
 from prompts import ENGLISH_PROMPT, RUSSIAN_PROMPT
 from utils import postprocess_special_fields
+
+load_dotenv()
+
+API_KEY = os.getenv('API_KEY')
+GPT_MODEL = os.getenv('GPT_MODEL')
+
+# create client with proxy
+proxy_url = os.environ.get('OPENAI_PROXY_URL')
+proxy_log = os.environ.get('PROXY_LOGIN')
+proxy_pass = os.environ.get('PROXY_PASS')
+proxy_auth = HTTPProxyAuth(proxy_log, proxy_pass)
+client = OpenAI(api_key=API_KEY) if proxy_url is None or proxy_url == "" else OpenAI(api_key=API_KEY,
+                                                                                     http_client=httpx.Client(
+                                                                                         proxy=proxy_url))
+
+MODEL = YOLO('yolov8s.pt')
+EXTRACTED_IMG_FOLDER = os.getenv('EXTRACTED_IMG_FOLDER')
+
+BUCKET_HOST = os.getenv('BUCKET_HOST')
+BUCKET_KEY_ID = os.getenv('BUCKET_KEY_ID')
+BUCKET_KEY = os.getenv('BUCKET_KEY')
+BUCKET_SERVICE = os.getenv('BUCKET_SERVICE')
+BUCKET_NAME = os.getenv('BUCKET_NAME')
+
+S3 = boto3.session.Session().client(
+    service_name=BUCKET_SERVICE,
+    endpoint_url=BUCKET_HOST,
+    aws_access_key_id=BUCKET_KEY_ID,
+    aws_secret_access_key=BUCKET_KEY
+)
 
 
 app = FastAPI()
@@ -73,136 +112,12 @@ async def parse_text_with_llm(text: str, prompt_language: str):
         d = {"messages": [{"role": "system", "content": f"{ENGLISH_PROMPT}"},
                           {"role": "user", "content": f"{text}"}]}
 
-    # response = OPENAI_CLIENT.chat.completions.create(
-    #     model=OPENAI_MODEL_NAME,
-    #     messages=d['messages']
-    # )
-    #
-    # content = response.choices[0].message.content
+    response = client.chat.completions.create(
+        model=GPT_MODEL,
+        messages=d['messages']
+    )
 
-    content = """{
-  "resume": {
-    "resume_id": "",
-    "first_name": "Антон",
-    "last_name": "Бармин",
-    "middle_name": "Сергеевич",
-    "birth_date": "1995-06-14",
-    "birth_date_year_only": False,
-    "country": "Россия",
-    "city": "Белгород",
-    "about": "С 2018 года занимаюсь разработкой на Python, основные сферы деятельности: ML, DL, Computer Vision, System Design. Текущее направление развития – математика, математическое моделирование.",
-    "key_skills": [
-      "Python",
-      "SQL",
-      "R",
-      "FastAPI",
-      "Flask",
-      "Pytest",
-      "Postgres",
-      "Airflow",
-      "Torch",
-      "Tensorflow",
-      "sklearn",
-      "xgboost",
-      "pandas",
-      "numpy",
-      "statsmodels",
-      "ggplot2",
-      "caret",
-      "Redis",
-      "GIT",
-      "Jira",
-      "Docker",
-      "Docker-compose",
-      "Triton-Inference-Server"
-    ],
-    "salary_expectations_amount": "",
-    "salary_expectations_currency": "",
-    "photo_path": "",
-    "language": "ru",
-    "gender": "муж",
-    "resume_name": "",
-    "source_link": "",
-    "contactItems": [
-      {
-        "resume_contact_item_id": "",
-        "value": "89190008691",
-        "comment": "",
-        "contact_type": "Телефон"
-      },
-      {
-        "resume_contact_item_id": "",
-        "value": "barmiaa43@mail.ru",
-        "comment": "",
-        "contact_type": "Email"
-      }
-    ],
-    "educationItems": [
-      {
-        "resume_education_item_id": "",
-        "year": 2017,
-        "organization": "БГТУ им. В.Г.Шухова",
-        "faculty": "Кафедра “Технической кибернетики”",
-        "specialty": "мехатроника и робототехника",
-        "result": "",
-        "education_type": "Основное",
-        "education_level": "Бакалавр"
-      },
-      {
-        "resume_education_item_id": "",
-        "year": 2019,
-        "organization": "БГТУ им. В.Г.Шухова",
-        "faculty": "Кафедра “Программное обеспечение вычислительной техники и автоматизированных систем”",
-        "specialty": "информатика и вычислительная техника",
-        "result": "",
-        "education_type": "Основное",
-        "education_level": "Магистр"
-      }
-    ],
-    "experienceItems": [
-      {
-        "resume_experience_item_id": "",
-        "starts": 2020,
-        "ends": "",
-        "employer": "ООО “Наполеон АЙТИ”",
-        "city": "",
-        "url": "",
-        "position": "Senior Python Developer",
-        "description": "Backend разработка; ML System Design; Обучение, деплой моделей. Projects: Распознавание запрещенного контента, “Гранулометрия”, “Антифрод”, Доработка внутренних ML сервисов компании.",
-        "order": 3
-      },
-      {
-        "resume_experience_item_id": "",
-        "starts": 2022,
-        "ends": 2024,
-        "employer": "AI Talent Hub",
-        "city": "",
-        "url": "",
-        "position": "Mentor",
-        "description": "Менторство студентов на курсе “Глубокое обучение на практике”",
-        "order": 2
-      },
-      {
-        "resume_experience_item_id": "",
-        "starts": 2018,
-        "ends": 2020,
-        "employer": "ООО “Фабрика информационных технологий”",
-        "city": "",
-        "url": "",
-        "position": "Python Developer",
-        "description": "Backend разработка; ML System Design; Обучение, деплой моделей. Projects: Распознавание автомобильных номеров (v1), Сервис внутренней аналитики, Распознавание автомобильных номеров (v2). Achievements: один из лучших на рынке сервисов по распознаванию номеров на момент 2020г. (согласно внутреннему исследованию компании).",
-        "order": 1
-      }
-    ],
-    "languageItems": [
-      {
-        "resume_language_item_id": "",
-        "language": "Английский",
-        "language_level": "Средний"
-      }
-    ]
-  }
-}"""
+    content = response.choices[0].message.content
 
     return eval(content)
 
