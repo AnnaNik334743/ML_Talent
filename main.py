@@ -10,8 +10,8 @@ from openai import OpenAI
 from prompts import ENGLISH_PROMPT, RUSSIAN_PROMPT
 
 from dotenv import load_dotenv
-load_dotenv()
 
+load_dotenv()
 
 API_KEY = os.getenv('API_KEY')
 
@@ -28,10 +28,10 @@ BUCKET_SERVICE = os.getenv('BUCKET_SERVICE')
 BUCKET_NAME = os.getenv('BUCKET_NAME')
 
 S3 = boto3.session.Session().client(
-        service_name=BUCKET_SERVICE,
-        endpoint_url=BUCKET_HOST,
-        aws_access_key_id=BUCKET_KEY_ID,
-        aws_secret_access_key=BUCKET_KEY
+    service_name=BUCKET_SERVICE,
+    endpoint_url=BUCKET_HOST,
+    aws_access_key_id=BUCKET_KEY_ID,
+    aws_secret_access_key=BUCKET_KEY
 )
 
 app = FastAPI()

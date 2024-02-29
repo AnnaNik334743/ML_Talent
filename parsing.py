@@ -27,7 +27,7 @@ def save_if_img_contains_human(img: Image.Image) -> Optional[tuple[str, str]]:
         yandex_img_path (str): The remote folder to save extracted images (yandexcloud).
 
     Returns:
-        bool: found_img_path if a human is detected in the image, empty string otherwise.
+        bool: found_img_path if a human is detected in the image, None otherwise.
     """
     if is_human(img):
         local_img_path = EXTRACTED_IMG_FOLDER + '/' + datetime.datetime.now().strftime(
@@ -39,6 +39,7 @@ def save_if_img_contains_human(img: Image.Image) -> Optional[tuple[str, str]]:
         yandex_img_path = f"https://storage.yandexcloud.net/{BUCKET_NAME}/{bucket_filename}"
 
         return local_img_path, yandex_img_path
+    return None
 
 
 def pdf_parser(file_path: str) -> 'TruncParserOutput':
