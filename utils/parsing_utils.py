@@ -34,7 +34,6 @@ def save_if_img_contains_human(img: Image.Image) -> Optional[tuple[str, str]]:
         local_img_path = EXTRACTED_IMG_FOLDER + '/' + datetime.datetime.now().strftime(
             "%Y-%m-%d_%H-%M-%S") + '_image.jpg'
         img.save(local_img_path)
-
         bucket_filename = local_img_path
         S3.upload_file(local_img_path, BUCKET_NAME, bucket_filename)
         yandex_img_path = f"https://storage.yandexcloud.net/{BUCKET_NAME}/{bucket_filename}"
@@ -146,21 +145,6 @@ def docx_parser(file_path: str) -> 'TruncParserOutput':
     return TruncParserOutput(**{'photo_path': yandex_img_path, 'text': '\n'.join(text)})
 
 
-def txt_parser(file_path: str) -> 'TruncParserOutput':
-    """
-    Parses a TXT file.
-
-    Parameters:
-        file_path (str): The path of the TXT file to parse.
-
-    Returns:
-        TruncParserOutput: The parsed output.
-    """
-    with open(file_path, 'r', encoding='utf-8') as file:
-        text = file.read()
-    return TruncParserOutput(**{'photo_path': '', 'text': text})
-
-
 def parse(file_path: str, file_extension: str) -> 'ParserOutput':
     """
     Parses a file based on its extension.
@@ -173,10 +157,7 @@ def parse(file_path: str, file_extension: str) -> 'ParserOutput':
         ParserOutput: The parsed output.
     """
 
-    if file_extension == 'txt':
-        data = txt_parser(file_path)
-
-    elif file_extension == 'pdf':
+    if file_extension == 'pdf':
         data = pdf_parser(file_path)
 
     elif file_extension in ['doc', 'docx']:
