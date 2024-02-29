@@ -11,7 +11,12 @@ from ultralytics import YOLO
 
 from json_schemas import Resume
 from parsing import *
+from fastapi.responses import FileResponse
+from parsing_utils import parse
+from json_schemas import Resume, ParserOutput
+from config import OPENAI_CLIENT, OPENAI_MODEL_NAME
 from prompts import ENGLISH_PROMPT, RUSSIAN_PROMPT
+from utils import postprocess_special_fields
 
 load_dotenv()
 
@@ -43,6 +48,7 @@ S3 = boto3.session.Session().client(
     aws_secret_access_key=BUCKET_KEY
 )
 
+
 app = FastAPI()
 
 
@@ -70,8 +76,6 @@ async def extract_text(file: UploadFile = File(...)):
    Returns:
        ParserOutput: The parsed output containing extracted text and metadata.
     """
-    global MODEL
-
     # Get file extension
     file_extension = get_filename_extension(file.filename)
 
@@ -118,13 +122,19 @@ async def parse_text_with_llm(text: str, prompt_language: str):
     return eval(content)
 
 
+def prettify_output(d: 'Resume') -> dict:
+    return postprocess_special_fields(d)
+
+
 @app.post("/parse_file", response_model=Resume)
-async def parse_file(file: UploadFile = File(...)):
+async def parse_file(file: UploadFile = File(...), prettify_result: bool = False):
     """
     Parses a file uploaded via the API and returns a Resume object containing the extracted information.
 
     Parameters:
         file (UploadFile): The uploaded file containing the document.
+        prettify_result: Output contains number mappers (contact_type, education_type, etc.) if set to false, 
+        otherwise human-readable mapping
 
     Returns:
         Resume: The parsed resume object.
@@ -134,7 +144,7 @@ async def parse_file(file: UploadFile = File(...)):
 
     result['resume']['photo_path'] = data.photo_path
 
-    return result
+    return result if prettify_result else postprocess_special_fields(result)
 
 
 # @app.get("/download_file")

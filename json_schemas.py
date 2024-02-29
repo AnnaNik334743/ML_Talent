@@ -31,7 +31,7 @@ class ContactItem(BaseModel):
     resume_contact_item_id: str | int = ""
     value: str = ""
     comment: str = ""
-    contact_type: str = ""
+    contact_type: str | int = ""
 
 
 class EducationItem(BaseModel):
@@ -41,8 +41,8 @@ class EducationItem(BaseModel):
     faculty: str = ""
     specialty: str = ""
     result: str = ""
-    education_type: str = ""
-    education_level: str = ""
+    education_type: str | int = ""
+    education_level: str | int = ""
 
 
 class ExperienceItem(BaseModel):
@@ -69,7 +69,7 @@ class ResumeInner(BaseModel):
     last_name: str = ""
     middle_name: str = ""
     birth_date: str = ""
-    birth_date_year_only: bool = False
+    birth_date_year_only: bool | str = False
     country: str = ""
     city: str = ""
     about: str = ""
