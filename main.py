@@ -1,6 +1,7 @@
 import uvicorn
 import tempfile
 from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import FileResponse
 from ultralytics import YOLO
 from parsing import *
 from json_schemas import Resume
@@ -112,6 +113,15 @@ async def parse_file(file: UploadFile = File(...)):
     result['resume']['photo_path'] = data.photo_path
 
     return result
+
+
+@app.get("/download_file")
+async def download_file(file_path: str):
+    """
+    Returns a locally stored file to the user via API.
+    The file_path can be taken from JSON returned by the parse_file or parse_text method.
+    """
+    return FileResponse(file_path, media_type='application/octet-stream', filename='file.jpg')
 
 
 if __name__ == "__main__":

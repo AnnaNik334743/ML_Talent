@@ -33,7 +33,7 @@ def save_if_img_contains_human(file_path: str, img: Image.Image, model: Any,
         bool: found_img_path if a human is detected in the image, empty string otherwise.
     """
     if is_human(img, model):
-        found_img_path = extracted_img_folder + '/' + ''.join(file_path.split('.')[:-1]) + '_image.jpg'
+        found_img_path = extracted_img_folder + '/' + file_path + '_image.jpg'
         img.save(found_img_path)
         return found_img_path
     return ''
