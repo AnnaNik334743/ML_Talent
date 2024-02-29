@@ -63,48 +63,19 @@ Extract information about candidate from this raw CV text. Return your answer in
     }
 }
 ```
-Do not create any extra fields. Answer in English. Consider this information and use numbers in these fields:
+Do not create any extra fields. Answer in English. Some fields can only have a limited number of values:
 ```
-1.  contact_type: {
-    1: Phone
-    2: Email
-    3: Skype
-    4: Telegram
-    5: Github
-}
+1.  contact_type: {Phone, Email, Skype, Telegram, Github}
 Often contacts are written in the beginning of a CV.
 
-2. education_type: {
-    1: Elementary
-    2: Training
-    3: Sertificates
-    4: Basic
-
-}
+2. education_type: {Elementary, Training, Sertificates, Basic}
 This is usually about schools and courses of a candidate.
 
-3. education_level: {
-    1: Secondary
-    2: Secondary professional
-    3: Higher incomplete
-    4: Higher
-    5: Bachelor
-    6: Master
-    7: PhD
-    8: Doctor
-}
+3. education_level: {Secondary, Secondary professional, Higher incomplete, Higher, Bachelor, Master, PhD, Doctor}
 This field is usually about schools and courses of a candidate.
 
-3. language_level: {
-    1: Beginning
-    2: Pre-intermediate
-    3: Intermediate
-    4: Upper-intermediate
-    5: Advanced
-    6: Proficient
-    7: Native
-}
-Sometimes candidates specify language_level information, but not always. 
+4. language_level: {Beginning, Pre-intermediate, Intermediate, Upper-intermediate, Advanced, Proficient, Native}
+Sometimes candidates specify language_level information, but not always, so field can be empty. 
 ```
 """
 
@@ -174,46 +145,18 @@ RUSSIAN_PROMPT = """
     }
 }
 ```
-Не придумывай лишних полей. Отвечай на русском. Учитывай следующую информацию и используй нужные номера в этих полях:
+Не придумывай лишних полей. Отвечай на русском. Некоторые поля могут иметь только определенные значения:
 ```
-1. Типы контактов — contact_type: {
-    1: Телефон
-    2: Email
-    3: Skype
-    4: Telegram
-    5: Github
-}
+1. Типы контактов — contact_type: {Телефон, Email, Skype, Telegram, Github}
 Часто контакты указаны в начале резюме.
 
-2. Виды образования — education_type: {
-    1: Начальное
-    2: Повышение квалификации
-    3: Сертификаты
-    4: Основное
-}
-Это информация про образовательные учереждения, которые закончил кандидат.
+2. Виды образования — education_type: {Начальное, Повышение квалификации, Сертификаты, Основное}
+Это информация про образование, которое получил кандидат.
 
-3. Уровень образования — education_level: {
-    1: Среднее
-    2: Среднее специальное
-    3: Неоконченное высшее
-    4: Высшее
-    5: Бакалавр
-    6: Магистр
-    7: Кандидат наук
-    8: Доктор наук
-}
-Это информация про образовательные учереждения, которые закончил кандидат.
+3. Уровень образования — education_level: {Среднее, Среднее специальное, Неоконченное высшее, Высшее, Бакалавр, Магистр, Кандидат наук, Доктор наук}
+Это информация про образование, которое получил кандидат.
 
-3. Уровень знания языка — language_level: {
-    1: Начальный
-    2: Элементарный
-    3: Средний
-    4: Средне-продвинутый
-    5: Продвинутый
-    6: В совершенстве
-    7: Родной
-}
-Иногда кандидаты указывают эту информацию, но не всегда.
+3. Уровень знания языка — language_level: {Начальный, Элементарный, Средний, Средне-продвинутый, Продвинутый, В совершенстве, Родной}
+Иногда кандидаты указывают эту информацию, но не всегда, поэтому поле может быть пустым.
 ```
 """
