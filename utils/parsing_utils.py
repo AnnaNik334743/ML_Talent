@@ -11,9 +11,11 @@ from PIL import Image
 from easyocr import Reader
 from langdetect import detect
 from spire.doc import FileFormat, Document
-from json_schemas import TruncParserOutput, ParserOutput
-from utils import naive_lang_detect, is_human
-from config import EXTRACTED_IMG_FOLDER, BUCKET_NAME, S3
+from utils.json_schemas import TruncParserOutput, ParserOutput
+from utils.photo_extraction import is_human
+from utils.language_detection import naive_lang_detect
+from config import S3, EXTRACTED_IMG_FOLDER, BUCKET_NAME
+import boto3
 
 
 def save_if_img_contains_human(img: Image.Image) -> Optional[tuple[str, str]]:

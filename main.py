@@ -1,52 +1,11 @@
+import shutil
 import tempfile
-
-import boto3
-import httpx
-import uvicorn
-from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File
-from openai import OpenAI
-from requests.auth import HTTPProxyAuth
-from ultralytics import YOLO
-
-from json_schemas import Resume
-from parsing import *
-from fastapi.responses import FileResponse
-from parsing_utils import parse
-from json_schemas import Resume, ParserOutput
 from config import OPENAI_CLIENT, OPENAI_MODEL_NAME
-from prompts import ENGLISH_PROMPT, RUSSIAN_PROMPT
-from utils import postprocess_special_fields
-
-load_dotenv()
-
-API_KEY = os.getenv('API_KEY')
-GPT_MODEL = os.getenv('GPT_MODEL')
-
-# create client with proxy
-proxy_url = os.environ.get('OPENAI_PROXY_URL')
-proxy_log = os.environ.get('PROXY_LOGIN')
-proxy_pass = os.environ.get('PROXY_PASS')
-proxy_auth = HTTPProxyAuth(proxy_log, proxy_pass)
-client = OpenAI(api_key=API_KEY) if proxy_url is None or proxy_url == "" else OpenAI(api_key=API_KEY,
-                                                                                     http_client=httpx.Client(
-                                                                                         proxy=proxy_url))
-
-MODEL = YOLO('yolov8s.pt')
-EXTRACTED_IMG_FOLDER = os.getenv('EXTRACTED_IMG_FOLDER')
-
-BUCKET_HOST = os.getenv('BUCKET_HOST')
-BUCKET_KEY_ID = os.getenv('BUCKET_KEY_ID')
-BUCKET_KEY = os.getenv('BUCKET_KEY')
-BUCKET_SERVICE = os.getenv('BUCKET_SERVICE')
-BUCKET_NAME = os.getenv('BUCKET_NAME')
-
-S3 = boto3.session.Session().client(
-    service_name=BUCKET_SERVICE,
-    endpoint_url=BUCKET_HOST,
-    aws_access_key_id=BUCKET_KEY_ID,
-    aws_secret_access_key=BUCKET_KEY
-)
+from utils.parsing_utils import parse
+from utils.json_schemas import Resume, ParserOutput
+from utils.prompts import ENGLISH_PROMPT, RUSSIAN_PROMPT
+from utils.postprocess import postprocess_special_fields
 
 
 app = FastAPI()
@@ -112,8 +71,8 @@ async def parse_text_with_llm(text: str, prompt_language: str):
         d = {"messages": [{"role": "system", "content": f"{ENGLISH_PROMPT}"},
                           {"role": "user", "content": f"{text}"}]}
 
-    response = client.chat.completions.create(
-        model=GPT_MODEL,
+    response = OPENAI_CLIENT.chat.completions.create(
+        model=OPENAI_MODEL_NAME,
         messages=d['messages']
     )
 
@@ -155,6 +114,3 @@ async def parse_file(file: UploadFile = File(...), prettify_result: bool = False
 #     """
 #     return FileResponse(local_file_path, media_type='application/octet-stream', filename='file.jpg')
 
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
