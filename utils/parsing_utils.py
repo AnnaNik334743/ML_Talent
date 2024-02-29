@@ -146,6 +146,21 @@ def docx_parser(file_path: str) -> 'TruncParserOutput':
     return TruncParserOutput(**{'photo_path': yandex_img_path, 'text': '\n'.join(text)})
 
 
+def txt_parser(file_path: str) -> 'TruncParserOutput':
+    """
+    Parses a TXT file.
+
+    Parameters:
+        file_path (str): The path of the TXT file to parse.
+
+    Returns:
+        TruncParserOutput: The parsed output.
+    """
+    with open(file_path, 'r', encoding='utf-8') as file:
+        text = file.read()
+    return TruncParserOutput(**{'photo_path': '', 'text': text})
+
+
 def parse(file_path: str, file_extension: str) -> 'ParserOutput':
     """
     Parses a file based on its extension.
@@ -158,7 +173,10 @@ def parse(file_path: str, file_extension: str) -> 'ParserOutput':
         ParserOutput: The parsed output.
     """
 
-    if file_extension == 'pdf':
+    if file_extension == 'txt':
+        data = txt_parser(file_path)
+
+    elif file_extension == 'pdf':
         data = pdf_parser(file_path)
 
     elif file_extension in ['doc', 'docx']:
